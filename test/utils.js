@@ -18,6 +18,12 @@ test('merge()', function (t) {
     var nestedArrays = utils.merge({ foo: ['baz'] }, { foo: ['bar', 'xyzzy'] });
     t.deepEqual(nestedArrays, { foo: ['baz', 'bar', 'xyzzy'] });
 
+    t.test('returns target when source is empty', function (st) {
+        var target = {};
+        t.equal(utils.merge(target, null), target);
+        st.end();
+    });
+
     t.end();
 });
 

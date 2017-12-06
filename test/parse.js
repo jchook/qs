@@ -244,6 +244,32 @@ test('parse()', function (t) {
         st.end();
     });
 
+    t.test('parses empty brackets with children', function (st) {
+        var arraysOfObjects = qs.parse('a[][b]=c&a[][d]=e');
+        st.deepEqual(arraysOfObjects, { a: [{ b: 'c' }, { d: 'e' }] });
+        st.end();
+    });
+
+    t.test('parses empty brackets with children and non-empty numeric keys first', function (st) {
+        var arraysOfObjects = qs.parse('a[65][b]=c&a[][d]=e&a[test][x]=y');
+        var a = [];
+        a[65] = { b: 'c' };
+        a[66] = { d: 'e' };
+        a.test = { x: 'y' };
+        st.deepEqual(arraysOfObjects, { a: a });
+        st.end();
+    });
+
+    t.test('parses empty brackets with children and non-empty string keys first', function (st) {
+        var arraysOfObjects = qs.parse('a[test][x]=y&a[65][b]=c&a[][d]=e');
+        var a = [];
+        a[65] = { b: 'c' };
+        a[66] = { d: 'e' };
+        a.test = { x: 'y' };
+        st.deepEqual(arraysOfObjects, { a: a });
+        st.end();
+    });
+
     t.test('continues parsing when no parent is found', function (st) {
         st.deepEqual(qs.parse('[]=&a=b'), { 0: '', a: 'b' });
         st.deepEqual(qs.parse('[]&a=b', { strictNullHandling: true }), { 0: null, a: 'b' });
@@ -339,6 +365,34 @@ test('parse()', function (t) {
         st.end();
     });
 
+    t.test('parses an object recursively if asked', function (st) {
+        var input = {
+            'user[name]': { 'pop[bob]': 3 },
+            'user[email]': null
+        };
+
+        var expected = {
+            user: {
+                name: {
+                    pop: {
+                        bob: 3
+                    }
+                },
+                email: null
+            }
+        };
+
+        var result = qs.parse(input, { parseObjectsRecursively: true });
+        st.deepEqual(result, expected);
+        st.end();
+    });
+
+    t.test('returns empty object when it receives unexpected input', function (st) {
+        st.deepEqual(qs.parse(new Date()), {});
+        st.deepEqual(qs.parse(5), {});
+        st.end();
+    });
+
     t.test('parses an object in dot notation', function (st) {
         var input = {
             'user.name': { 'pop[bob]': 3 },
@@ -391,6 +445,10 @@ test('parse()', function (t) {
         a.b = a;
 
         var parsed;
+
+        st.doesNotThrow(function () {
+            qs.parse({ 'foo[bar]': 'baz', 'foo[baz]': a }, { parseObjectsRecursively: true });
+        });
 
         st.doesNotThrow(function () {
             parsed = qs.parse({ 'foo[bar]': 'baz', 'foo[baz]': a });
